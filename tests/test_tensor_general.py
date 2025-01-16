@@ -4,7 +4,7 @@ from typing import Callable, Dict, Iterable, List, Tuple
 import numba
 import numba.cuda
 import pytest
-from hypothesis import given, settings
+from hypothesis import given, settings, HealthCheck
 from hypothesis.strategies import DataObject, data, integers, lists, permutations
 
 import minitorch
@@ -99,6 +99,7 @@ def test_one_derivative(
     grad_check(tensor_fn, t1)
 
 
+# @settings(suppress_health_check=[HealthCheck.too_slow])
 @given(data())
 @settings(max_examples=50)
 @pytest.mark.parametrize("fn", two_arg)

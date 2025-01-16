@@ -116,11 +116,13 @@ class Conv1dFun(Function):
         ctx.save_for_backward(input, weight)
         batch, in_channels, w = input.shape
         out_channels, in_channels2, kw = weight.shape
+        import pdb; pdb.set_trace()
         assert in_channels == in_channels2
 
         # Run convolution
         output = input.zeros((batch, out_channels, w))
         tensor_conv1d(
+            # storage shape stride
             *output.tuple(), output.size, *input.tuple(), *weight.tuple(), False
         )
         return output

@@ -10,7 +10,7 @@ class Module:
     Attributes
     ----------
         _modules : Storage of the child modules
-        _parameters : Storage of the module's parameters
+        _parameters : Storage of the module's parameters (Include self and the child modules')
         training : Whether the module is in training mode or evaluation mode
 
     """
@@ -18,6 +18,7 @@ class Module:
     _modules: Dict[str, Module]
     _parameters: Dict[str, Parameter]
     training: bool
+    # mode: str
 
     def __init__(self) -> None:
         self._modules = {}
@@ -25,17 +26,31 @@ class Module:
         self.training = True
 
     def modules(self) -> Sequence[Module]:
-        """Return the direct child modules of this module."""
+        """Return the direct child modules of this module.(exclusive this module)"""
+        """
+            a = ModuleA() <=> _modules[a] = ModuleA
+            b = ModuleB() <=> _modules[b] = ModuleB
+        """
         m: Dict[str, Module] = self.__dict__["_modules"]
         return list(m.values())
 
     def train(self) -> None:
         """Set the mode of this module and all descendent modules to `train`."""
-        raise NotImplementedError("Need to include this file from past assignment.")
+        self.mode = "train"
+        self.training = True
+
+        modules_lst = self.modules()
+        for module in modules_lst:
+            module.train()
 
     def eval(self) -> None:
         """Set the mode of this module and all descendent modules to `eval`."""
-        raise NotImplementedError("Need to include this file from past assignment.")
+        self.mode = "eval"
+        self.training = False
+
+        modules_lst = self.modules()
+        for module in modules_lst:
+            module.eval()
 
     def named_parameters(self) -> Sequence[Tuple[str, Parameter]]:
         """Collect all the parameters of this module and its descendents.
@@ -45,11 +60,24 @@ class Module:
             The name and `Parameter` of each ancestor parameter.
 
         """
-        raise NotImplementedError("Need to include this file from past assignment.")
+        def find_parameters(self: Module, name: str) -> list[Tuple[str, Parameter]]:
+            parameters_lst: list[Tuple[str, Parameter]] = []
+            p: Dict[str, Parameter] = self.__dict__["_parameters"]
+            for (k, v) in p.items():
+                parameters_lst += [(k if name is "" else name + "." + k, v)]
+
+            m: Dict[str, Module] = self.__dict__["_modules"]
+            for (k, v) in m.items():
+                parameters_lst += find_parameters(v, k if name is "" else name + "." + k)
+
+            return parameters_lst
+
+        return find_parameters(self, "")
+
 
     def parameters(self) -> Sequence[Parameter]:
         """Enumerate over all the parameters of this module and its descendents."""
-        raise NotImplementedError("Need to include this file from past assignment.")
+        return list(dict(self.named_parameters()).values())
 
     def add_parameter(self, k: str, v: Any) -> Parameter:
         """Manually add a parameter. Useful helper for scalar parameters.
@@ -123,6 +151,8 @@ class Parameter:
     """
 
     def __init__(self, x: Any, name: Optional[str] = None) -> None:
+        # self.value.requires_grad_()
+        # self.value.name
         self.value = x
         self.name = name
         if hasattr(x, "requires_grad_"):
