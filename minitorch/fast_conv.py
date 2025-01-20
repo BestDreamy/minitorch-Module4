@@ -78,9 +78,9 @@ def _tensor_conv1d(
         reverse (bool): anchor weight at left or right
 
     """
-    batch_, out_channels, out_width = out_shape
     batch, in_channels, width = input_shape
     out_channels_, in_channels_, kw = weight_shape
+    batch_, out_channels, out_width = out_shape
 
     assert (
         batch == batch_
@@ -90,8 +90,28 @@ def _tensor_conv1d(
     s1 = input_strides
     s2 = weight_strides
 
-    # TODO: Implement for Task 4.1.
-    raise NotImplementedError("Need to implement for Task 4.1")
+    for i in prange(out_size):
+        out_index = out_shape.copy()
+        to_index(i, out_shape, out_index)
+
+        sum = 0
+        for j in range(in_channels):
+            for k in range(kw):
+                idx = out_index[2]
+                if reverse and idx - k >= 0:
+                    idx -= k
+                elif not reverse and idx + k < width:
+                    idx += k
+                else:
+                    continue
+                # selected from input channels of the end index
+                in_index = [out_index[0], j, idx]
+                weight_index = [out_index[1], j, k]
+
+                sum += input[index_to_position(in_index, input_strides)] * weight[index_to_position(weight_index, weight_strides)]
+
+        out[index_to_position(out_index, out_strides)] = sum
+
 
 
 tensor_conv1d = njit(_tensor_conv1d, parallel=True)
@@ -116,7 +136,9 @@ class Conv1dFun(Function):
         ctx.save_for_backward(input, weight)
         batch, in_channels, w = input.shape
         out_channels, in_channels2, kw = weight.shape
-        import pdb; pdb.set_trace()
+        # import pdb; pdb.set_trace()
+        print(input.tuple())
+        print(weight.tuple())
         assert in_channels == in_channels2
 
         # Run convolution
