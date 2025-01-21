@@ -111,6 +111,7 @@ def _tensor_conv1d(
                 sum += input[index_to_position(in_index, input_strides)] * weight[index_to_position(weight_index, weight_strides)]
 
         out[index_to_position(out_index, out_strides)] = sum
+        # out[i] = sum
 
 
 
@@ -137,8 +138,6 @@ class Conv1dFun(Function):
         batch, in_channels, w = input.shape
         out_channels, in_channels2, kw = weight.shape
         # import pdb; pdb.set_trace()
-        print(input.tuple())
-        print(weight.tuple())
         assert in_channels == in_channels2
 
         # Run convolution
@@ -243,8 +242,30 @@ def _tensor_conv2d(
     s10, s11, s12, s13 = s1[0], s1[1], s1[2], s1[3]
     s20, s21, s22, s23 = s2[0], s2[1], s2[2], s2[3]
 
-    # TODO: Implement for Task 4.2.
-    raise NotImplementedError("Need to implement for Task 4.2")
+    for u in prange(out_size):
+        out_index = out_shape.copy()
+        to_index(u, out_shape, out_index)
+
+        sum = 0
+        for i in range(in_channels):
+            for j in range(kh):
+                for k in range(kw):
+                    idx_h, idx_w = out_index[2:]
+                    if reverse and idx_h >= j and idx_w >= k:
+                        idx_h -= j
+                        idx_w -= k
+                    elif not reverse and idx_h + j < height and idx_w + k < width:
+                        idx_h += j
+                        idx_w += k 
+                    else:
+                        continue
+
+                    in_index = [out_index[0], i, idx_h, idx_w]
+                    weight_index = [out_index[1], i, j, k]
+                    sum += input[index_to_position(in_index, s1)] * weight[index_to_position(weight_index, s2)]
+
+        # out[index_to_position(out_index, out_strides)] = sum
+        out[i] = sum
 
 
 tensor_conv2d = njit(_tensor_conv2d, parallel=True, fastmath=True)
