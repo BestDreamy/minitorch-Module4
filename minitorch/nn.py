@@ -75,6 +75,7 @@ def avgpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
     output = output.view(output.shape[0], output.shape[1], output.shape[2], output.shape[3])
     return output
 
+
 max_reduce = FastOps.reduce(operators.max, -1e9)
 
 
@@ -98,18 +99,14 @@ def argmax(input: Tensor, dim: int) -> Tensor:
 class Max(Function):
     @staticmethod
     def forward(ctx: Context, input: Tensor, dim: Tensor) -> Tensor:
-        "Forward of max should be max reduction"
-        # TODO: Implement for Task 4.4.
-        max_red = max_reduce(input, int(dim.item()))
-        ctx.save_for_backward(input, max_red)
-        return max_red
+        result = max_reduce(input, int(dim.item()))
+        ctx.save_for_backward(input, result)
+        return result
 
     @staticmethod
     def backward(ctx: Context, grad_output: Tensor) -> Tuple[Tensor, float]:
-        "Backward of max should be argmax (see above)"
-        # TODO: Implement for Task 4.4.
-        (input, max_red) = ctx.saved_values
-        return (grad_output * (max_red == input)), 0.0
+        (input, result) = ctx.saved_values
+        return (grad_output * (result == input)), 0.0
 
 
 def max(input: Tensor, dim: int) -> Tensor:
@@ -117,7 +114,7 @@ def max(input: Tensor, dim: int) -> Tensor:
 
 
 def softmax(input: Tensor, dim: int) -> Tensor:
-    r"""
+    """
     Compute the softmax as a tensor.
 
 
@@ -131,14 +128,13 @@ def softmax(input: Tensor, dim: int) -> Tensor:
     Returns:
         softmax tensor
     """
-    # TODO: Implement for Task 4.4.
     t = input.exp()
     s = t.sum(dim)
     return t / s
 
 
 def logsoftmax(input: Tensor, dim: int) -> Tensor:
-    r"""
+    """
     Compute the log of the softmax as a tensor.
 
     $z_i = x_i - \log \sum_i e^{x_i}$
@@ -152,7 +148,6 @@ def logsoftmax(input: Tensor, dim: int) -> Tensor:
     Returns:
          log of softmax tensor
     """
-    # TODO: Implement for Task 4.4.
     t = input.exp()
     t = t.sum(dim)
     t = t.log()
@@ -171,7 +166,6 @@ def maxpool2d(input: Tensor, kernel: Tuple[int, int]) -> Tensor:
         Tensor : pooled tensor
     """
     batch, channel, height, width = input.shape
-    # TODO: Implement for Task 4.4.
     t, _, _ = tile(input, kernel)
     t = max(t, 4)
     t = t.view(batch, channel, t.shape[2], t.shape[3])
@@ -190,7 +184,6 @@ def dropout(input: Tensor, rate: float, ignore: bool = False) -> Tensor:
     Returns:
         tensor with randoom positions dropped out
     """
-    # TODO: Implement for Task 4.4.
     if not ignore:
         rand_tensor = rand(input.shape)
         random_drop = rand_tensor > rate
